@@ -40,6 +40,24 @@ Set one of the following environment-variable groups:
 - `SF_CLIENT_SECRET`
 - `SF_LOGIN_URL` (optional, defaults to `https://login.salesforce.com`)
 
+### Option C: Browser login (no auth env vars required)
+
+This mode uses OAuth + PKCE and opens your browser for Salesforce login.
+
+You only need a Salesforce Connected App **consumer key** (client ID).
+
+## Salesforce Connected App setup (for browser mode)
+
+In Salesforce, create/update a Connected App with OAuth enabled:
+
+1. Enable OAuth settings
+2. Set callback URL to:
+   - `http://localhost:1717/callback`
+3. Add OAuth scopes:
+   - `Access and manage your data (api)`
+
+Use the Connected App **Consumer Key** as `--sf-client-id`.
+
 ## Usage
 
 ```bash
@@ -47,6 +65,19 @@ python3 scripts/generate_release_notes_document.py \
   --release-name "Spring 2026" \
   --account-id "001xxxxxxxxxxxxAAA"
 ```
+
+### Browser login usage (no auth env vars)
+
+```bash
+python3 scripts/generate_release_notes_document.py \
+  --auth-method browser \
+  --sf-client-id "YOUR_CONNECTED_APP_CONSUMER_KEY" \
+  --release-name "Spring 2026" \
+  --account-id "001xxxxxxxxxxxxAAA"
+```
+
+The script starts a local callback server at `localhost:1717`, opens your
+browser to Salesforce login, then continues automatically after sign-in.
 
 ### Optional arguments
 
@@ -57,6 +88,39 @@ python3 scripts/generate_release_notes_document.py \
 - `--name-field`: release note title field (default `Name`)
 - `--details-field`: release note details field (default `Details__c`)
 - `--api-version`: Salesforce API version (default `v59.0`)
+- `--auth-method`: `auto` (default), `env`, or `browser`
+- `--sf-client-id`: Connected App consumer key (required for browser mode)
+- `--sf-login-url`: login URL (default `https://login.salesforce.com`)
+- `--redirect-host`: local callback host (default `localhost`)
+- `--redirect-port`: local callback port (default `1717`)
+- `--auth-timeout-seconds`: wait time for OAuth callback (default `300`)
+- `--no-open-browser`: print auth URL instead of opening browser automatically
+
+## Build as desktop executable
+
+You can package this as a single-file executable using PyInstaller.
+
+### macOS / Linux
+
+```bash
+python3 -m pip install --upgrade pyinstaller
+pyinstaller --onefile --name release-notes-generator scripts/generate_release_notes_document.py
+```
+
+Output binary:
+
+- `dist/release-notes-generator`
+
+### Windows (PowerShell)
+
+```powershell
+py -m pip install --upgrade pyinstaller
+pyinstaller --onefile --name release-notes-generator scripts/generate_release_notes_document.py
+```
+
+Output binary:
+
+- `dist\release-notes-generator.exe`
 
 ## Example output
 

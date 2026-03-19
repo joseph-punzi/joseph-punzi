@@ -1,11 +1,14 @@
 import pathlib
 import sys
+import urllib.parse
 import unittest
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from scripts.generate_release_notes_document import (  # noqa: E402
+    build_browser_authorization_url,
     build_release_notes_soql,
+    generate_pkce_verifier_and_challenge,
     render_release_notes_markdown,
 )
 
@@ -78,6 +81,32 @@ class RenderReleaseNotesMarkdownTests(unittest.TestCase):
             details_field="Details__c",
         )
         self.assertIn("No release notes matched the selected filters.", output)
+
+
+class BrowserOAuthHelpersTests(unittest.TestCase):
+    def test_pkce_verifier_and_challenge_are_usable(self) -> None:
+        verifier, challenge = generate_pkce_verifier_and_challenge()
+        self.assertTrue(43 <= len(verifier) <= 128)
+        self.assertGreater(len(challenge), 0)
+
+    def test_build_browser_authorization_url(self) -> None:
+        url = build_browser_authorization_url(
+            login_url="https://login.salesforce.com",
+            client_id="CLIENT_ID_123",
+            redirect_uri="http://localhost:1717/callback",
+            state="STATE123",
+            code_challenge="CHALLENGE123",
+        )
+        parsed = urllib.parse.urlparse(url)
+        query = urllib.parse.parse_qs(parsed.query)
+
+        self.assertEqual(parsed.path, "/services/oauth2/authorize")
+        self.assertEqual(query["response_type"][0], "code")
+        self.assertEqual(query["client_id"][0], "CLIENT_ID_123")
+        self.assertEqual(query["redirect_uri"][0], "http://localhost:1717/callback")
+        self.assertEqual(query["state"][0], "STATE123")
+        self.assertEqual(query["code_challenge"][0], "CHALLENGE123")
+        self.assertEqual(query["code_challenge_method"][0], "S256")
 
 
 if __name__ == "__main__":
