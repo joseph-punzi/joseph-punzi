@@ -146,6 +146,50 @@ def render_release_notes_markdown(
     return "\n".join(lines)
 
 
+def default_output_path(release_name: str, account_id: Optional[str]) -> str:
+    """Return default markdown output path for a release/account combination."""
+    name_slug = slugify(release_name)
+    account_suffix = f"-{slugify(account_id)}" if account_id else ""
+    return f"release-notes-{name_slug}{account_suffix}.md"
+
+
+def generate_release_notes_document(
+    *,
+    client: "SalesforceClient",
+    release_name: str,
+    account_id: Optional[str],
+    output_path: Optional[str],
+    release_note_object: str,
+    release_lookup_field: str,
+    account_field: str,
+    name_field: str,
+    details_field: str,
+) -> tuple[str, int]:
+    """Query Salesforce and write release notes markdown file."""
+    soql = build_release_notes_soql(
+        release_name,
+        account_id,
+        release_note_object=release_note_object,
+        release_lookup_field=release_lookup_field,
+        account_field=account_field,
+        name_field=name_field,
+        details_field=details_field,
+    )
+    records = client.query_all(soql)
+    document = render_release_notes_markdown(
+        release_name,
+        account_id,
+        records,
+        name_field=name_field,
+        details_field=details_field,
+    )
+
+    resolved_output_path = output_path or default_output_path(release_name, account_id)
+    with open(resolved_output_path, "w", encoding="utf-8") as file_handle:
+        file_handle.write(document)
+    return resolved_output_path, len(records)
+
+
 @dataclass
 class SalesforceConnection:
     """Authentication and endpoint details for Salesforce API usage."""
@@ -634,38 +678,19 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-
-    soql = build_release_notes_soql(
-        args.release_name,
-        args.account_id,
+    client = build_salesforce_client(args)
+    output_path, record_count = generate_release_notes_document(
+        client=client,
+        release_name=args.release_name,
+        account_id=args.account_id,
+        output_path=args.output,
         release_note_object=args.release_note_object,
         release_lookup_field=args.release_lookup_field,
         account_field=args.account_field,
         name_field=args.name_field,
         details_field=args.details_field,
     )
-
-    client = build_salesforce_client(args)
-    records = client.query_all(soql)
-
-    document = render_release_notes_markdown(
-        args.release_name,
-        args.account_id,
-        records,
-        name_field=args.name_field,
-        details_field=args.details_field,
-    )
-
-    output_path = args.output
-    if not output_path:
-        name_slug = slugify(args.release_name)
-        account_suffix = f"-{slugify(args.account_id)}" if args.account_id else ""
-        output_path = f"release-notes-{name_slug}{account_suffix}.md"
-
-    with open(output_path, "w", encoding="utf-8") as file_handle:
-        file_handle.write(document)
-
-    print(f"Wrote {len(records)} release notes to {output_path}")
+    print(f"Wrote {record_count} release notes to {output_path}")
     return 0
 
 

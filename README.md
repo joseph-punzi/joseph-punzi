@@ -79,6 +79,24 @@ python3 scripts/generate_release_notes_document.py \
 The script starts a local callback server at `localhost:1717`, opens your
 browser to Salesforce login, then continues automatically after sign-in.
 
+## Simple desktop UI
+
+Run the UI directly:
+
+```bash
+python3 scripts/release_notes_gui.py
+```
+
+In the app:
+
+1. Enter Release Name
+2. (Optional) Enter Account ID
+3. Enter Salesforce Client ID (Connected App consumer key)
+4. Click **Generate Release Notes Document**
+
+The app opens Salesforce login in your browser and writes the markdown file
+after successful authentication.
+
 ### Optional arguments
 
 - `--output`: output file path (default auto-generated markdown file name)
@@ -98,29 +116,31 @@ browser to Salesforce login, then continues automatically after sign-in.
 
 ## Build as desktop executable
 
-You can package this as a single-file executable using PyInstaller.
+You can package UI + CLI executables using PyInstaller.
 
 ### macOS / Linux
 
 ```bash
-python3 -m pip install --upgrade pyinstaller
-pyinstaller --onefile --name release-notes-generator scripts/generate_release_notes_document.py
+./scripts/build_desktop_executable.sh
 ```
 
-Output binary:
+Output binaries:
 
-- `dist/release-notes-generator`
+- `dist/release-notes-generator-ui` (desktop UI)
+- `dist/release-notes-generator-cli` (command line)
 
 ### Windows (PowerShell)
 
 ```powershell
 py -m pip install --upgrade pyinstaller
-pyinstaller --onefile --name release-notes-generator scripts/generate_release_notes_document.py
+pyinstaller --onefile --windowed --name release-notes-generator-ui scripts/release_notes_gui.py
+pyinstaller --onefile --name release-notes-generator-cli scripts/generate_release_notes_document.py
 ```
 
-Output binary:
+Output binaries:
 
-- `dist\release-notes-generator.exe`
+- `dist\release-notes-generator-ui.exe`
+- `dist\release-notes-generator-cli.exe`
 
 ## Example output
 

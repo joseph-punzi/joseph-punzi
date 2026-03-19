@@ -8,6 +8,7 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 from scripts.generate_release_notes_document import (  # noqa: E402
     build_browser_authorization_url,
     build_release_notes_soql,
+    default_output_path,
     generate_pkce_verifier_and_challenge,
     render_release_notes_markdown,
 )
@@ -107,6 +108,16 @@ class BrowserOAuthHelpersTests(unittest.TestCase):
         self.assertEqual(query["state"][0], "STATE123")
         self.assertEqual(query["code_challenge"][0], "CHALLENGE123")
         self.assertEqual(query["code_challenge_method"][0], "S256")
+
+
+class OutputPathTests(unittest.TestCase):
+    def test_default_output_path_without_account(self) -> None:
+        output = default_output_path("Spring 2026", None)
+        self.assertEqual(output, "release-notes-spring-2026.md")
+
+    def test_default_output_path_with_account(self) -> None:
+        output = default_output_path("Spring 2026", "001ABC123")
+        self.assertEqual(output, "release-notes-spring-2026-001abc123.md")
 
 
 if __name__ == "__main__":
